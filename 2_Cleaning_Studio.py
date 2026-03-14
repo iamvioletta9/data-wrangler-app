@@ -1,140 +1,93 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
-st.title("Cleaning & Preparation Studio")
+st.title("Cleaning Studio")
 
 if "data" not in st.session_state:
-    st.warning("Upload a dataset first.")
+    st.warning("Upload data first")
     st.stop()
 
-df = st.session_state["data"].copy()
+df = st.session_state["data"]
 
-# initialize log
-if "transform_log" not in st.session_state:
-    st.session_state["transform_log"] = []
+st.subheader("Current dataset")
 
-log = st.session_state["transform_log"]
-
-st.subheader("Dataset Preview")
 st.dataframe(df.head())
 
-st.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
+st.markdown("---")
 
-# ------------------
-# Missing values
-# ------------------
-
-st.header("Missing Values")
-
-st.write(df.isnull().sum())
-
-column = st.selectbox("Column", df.columns)
-
-method = st.selectbox(
-    "Method",
-    ["Drop rows", "Fill mean", "Fill median", "Fill mode"]
+option = st.selectbox(
+    "Choose cleaning operation",
+    [
+        "Handle missing values",
+        "Drop column",
+        "Rename column",
+        "Scale numeric feature"
+    ]
 )
 
-if st.button("Apply Missing Value Fix"):
+if option == "Handle missing values":
 
-    if method == "Drop rows":
-        df = df.dropna(subset=[column])
+    method = st.selectbox(
+        "Method",
+        ["Drop rows","Fill mean","Fill median"]
+    )
 
-    elif method == "Fill mean":
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-        df[column] = df[column].fillna(df[column].mean())
+    if st.button("Apply"):
 
-    elif method == "Fill median":
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-        df[column] = df[column].fillna(df[column].median())
+        if method == "Drop rows":
+            df = df.dropna()
 
-    elif method == "Fill mode":
-        df[column] = df[column].fillna(df[column].mode()[0])
+        elif method == "Fill mean":
+            df = df.fillna(df.mean(numeric_only=True))
 
-    st.session_state["data"] = df
-    log.append(f"Handled missing values in {column}")
-
-    st.success("Done")
-
-# ------------------
-# Duplicates
-# ------------------
-
-st.header("Duplicates")
-
-dup_count = df.duplicated().sum()
-st.write("Duplicates:", dup_count)
-
-if st.button("Remove duplicates"):
-
-    before = len(df)
-    df = df.drop_duplicates()
-    after = len(df)
-
-    st.session_state["data"] = df
-    log.append(f"Removed {before-after} duplicates")
-
-    st.success("Duplicates removed")
-
-# ------------------
-# Scaling
-# ------------------
-
-st.header("Scaling")
-
-numeric_cols = df.select_dtypes(include=np.number).columns
-
-scale_cols = st.multiselect("Columns", numeric_cols)
-
-scale_type = st.selectbox(
-    "Scaling method",
-    ["MinMax", "Z-score"]
-)
-
-if st.button("Apply scaling"):
-
-    if len(scale_cols) > 0:
-
-        if scale_type == "MinMax":
-            scaler = MinMaxScaler()
-        else:
-            scaler = StandardScaler()
-
-        df[scale_cols] = scaler.fit_transform(df[scale_cols])
+        elif method == "Fill median":
+            df = df.fillna(df.median(numeric_only=True))
 
         st.session_state["data"] = df
-        log.append(f"{scale_type} scaling applied to {scale_cols}")
+        st.success("Missing values processed")
 
-        st.success("Scaling applied")
 
-# ------------------
-# Rename column
-# ------------------
+elif option == "Drop column":
 
-st.header("Rename Column")
+    col = st.selectbox("Column", df.columns)
 
-old = st.selectbox("Column to rename", df.columns)
-new = st.text_input("New name")
+    if st.button("Drop column"):
 
-if st.button("Rename"):
-
-    if new.strip() != "":
-        df = df.rename(columns={old: new})
+        df = df.drop(columns=[col])
 
         st.session_state["data"] = df
-        log.append(f"Renamed {old} to {new}")
 
-        st.success("Renamed")
+elif option == "Rename column":
 
-# ------------------
-# Transformation log
-# ------------------
+    col = st.selectbox("Column", df.columns)
 
-st.header("Transformation Log")
+    new = st.text_input("New name")
 
-if len(log) > 0:
-    st.write(log)
-else:
-    st.write("No transformations yet.")
+    if st.button("Rename"):
+
+        df.rename(columns={col:new}, inplace=True)
+
+        st.session_state["data"] = df
+
+
+elif option == "Scale numeric feature":
+
+    numeric = df.select_dtypes("number").columns
+
+    col = st.selectbox("Feature", numeric)
+
+    if st.button("Scale"):
+
+        scaler = StandardScaler()
+
+        df[col] = scaler.fit_transform(df[[col]])
+
+        st.session_state["data"] = df
+
+
+st.markdown("---")
+
+st.subheader("Updated dataset")
+
+st.dataframe(df.head())

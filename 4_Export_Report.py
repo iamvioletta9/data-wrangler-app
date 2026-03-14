@@ -1,36 +1,27 @@
 import streamlit as st
 import pandas as pd
-import json
 
-st.title("Export & Report")
+st.title("Export Processed Data")
 
 if "data" not in st.session_state:
-    st.warning("Upload data first.")
-    st.stop()
 
-df = st.session_state["data"]
+    st.warning("No dataset available.")
 
-st.subheader("Download Clean Dataset")
+else:
 
-csv = df.to_csv(index=False)
+    df = st.session_state["data"]
 
-st.download_button(
-    "Download CSV",
-    csv,
-    "clean_dataset.csv",
-    "text/csv"
-)
+    st.subheader("Preview")
 
-st.subheader("Transformation Report")
+    st.dataframe(df.head())
 
-log = st.session_state.get("transform_log", [])
+    csv = df.to_csv(index=False).encode("utf-8")
 
-st.write(log)
+    st.download_button(
+        label="Download Clean Dataset",
+        data=csv,
+        file_name="clean_dataset.csv",
+        mime="text/csv"
+    )
 
-report = json.dumps(log, indent=2)
-
-st.download_button(
-    "Download Report",
-    report,
-    "transform_report.json"
-)
+    st.success("Dataset ready for export")

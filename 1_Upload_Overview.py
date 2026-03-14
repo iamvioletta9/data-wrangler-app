@@ -1,39 +1,38 @@
 import streamlit as st
 import pandas as pd
 
-st.title("Upload & Overview")
+st.title("Dataset Upload")
 
-uploaded_file = st.file_uploader(
+file = st.file_uploader(
     "Upload dataset",
-    type=["csv", "xlsx", "json"]
+    type=["csv","xlsx","json"]
 )
 
-if uploaded_file is not None:
+if file:
 
-    if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
+    if file.name.endswith("csv"):
+        df = pd.read_csv(file)
 
-    elif uploaded_file.name.endswith(".xlsx"):
-        df = pd.read_excel(uploaded_file)
+    elif file.name.endswith("xlsx"):
+        df = pd.read_excel(file)
 
-    elif uploaded_file.name.endswith(".json"):
-        df = pd.read_json(uploaded_file)
-
-    # sanitize object columns to avoid Arrow issues
-    df = df.convert_dtypes()
+    elif file.name.endswith("json"):
+        df = pd.read_json(file)
 
     st.session_state["data"] = df
 
-    st.subheader("Dataset Preview")
+    st.success("Dataset loaded")
+
+    st.subheader("Preview")
+
     st.dataframe(df.head())
 
-    st.write("Shape:", df.shape)
+    col1,col2,col3 = st.columns(3)
 
-    st.subheader("Column Types")
-    st.write(df.dtypes)
+    col1.metric("Rows", df.shape[0])
+    col2.metric("Columns", df.shape[1])
+    col3.metric("Missing values", df.isnull().sum().sum())
 
-    st.subheader("Missing Values")
-    st.write(df.isnull().sum())
+else:
 
-    st.subheader("Duplicate Rows")
-    st.write(df.duplicated().sum())
+    st.warning("Upload a dataset to begin.")
